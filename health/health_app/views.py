@@ -444,6 +444,12 @@ def without_app(request):
         new_entry.save()
         messages.success(request, "Your appointment request has been sent successfully. Thank you!")
         return redirect("/")
+def profile_page(request):
+    username=request.session.get('username')
+    email=request.session.get('email')
+    print(username)
+    con={'username': username ,'email': email}
+    return render(request,'profile.html',con)
      
 
 
