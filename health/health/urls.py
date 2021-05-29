@@ -38,4 +38,5 @@ urlpatterns = [
     path('table/',views.table,name='table'),
     path('doctor_logout/',views.doctor_logout,name='doctor_logout'),
     path('without_app/',views.without_app,name='without_app'),
+    path('profile_page/',views.profile_page,name='profile_page'),
 ]
