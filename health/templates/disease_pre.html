@@ -56,12 +56,11 @@
       </ul>
       {% if food %}
       <h3>Food you can consume for better recovery</h3>
+      {%for i in li%}
       <ul>
-        <li>{{items1}}</li>
-        <li>{{items2}}</li>
-        <li>{{items3}}</li>
-        <li>{{items4}}</li>
+        <li>{{i}}</li>
       </ul>
+    {%endfor%}
     
       {% else %}
       <h3>Nutrient you can consume for better recovery</h3>
