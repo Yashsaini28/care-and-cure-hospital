@@ -57,6 +57,8 @@ def handle_signup(request):
             return redirect('/handle_signup')
         #Create the user
         myuser=User.objects.create_user(username,email,pass1)
+        request.session['username']=myuser.username
+
 
         messages.success(request,"Your account has been successfully created")
         return redirect("/user_login")
