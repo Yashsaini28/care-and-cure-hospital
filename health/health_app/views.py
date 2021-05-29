@@ -125,6 +125,7 @@ def prediction(request):
         dfnew[var3]=1
         dfnew[var4]=1
         #dfnew
+        dfnew = dfnew.iloc[:, :126].values
 
        
         predicted_disease1=model.predict(dfnew)
