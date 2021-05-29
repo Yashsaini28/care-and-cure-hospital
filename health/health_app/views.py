@@ -192,25 +192,10 @@ def disease_with_details(request):
     else:
         g=dfy['nutrient_1'].iloc[0]
         i=dfy['Nutrient_2'].iloc[0]
-    if li[0]:
-        items1=li[0]
-    else:
-        items1=''
-    if li[1]:
-        items2=li[1]
-    else:
-        items2=''
-    if li[2]:
-        items3=li[0]
-    else:
-        items3=''
-    if li[3]:
-        items4=li[0]
-    else:
-        items4=''
    
    
-    con={'h':h,'all_Disease' :all_Disease,'a':a,'b':b,'c':c,'d':d,'e':e,'f':f,'g':g,'i':i,'food':food,'items1':items1,'items2':items2,'items3':items3,'items4':items4}
+   
+    con={'h':h,'li':li,'all_Disease' :all_Disease,'a':a,'b':b,'c':c,'d':d,'e':e,'f':f,'g':g,'i':i,'food':food,'items1':items1,'items2':items2,'items3':items3,'items4':items4}
     return render(request,'disease_pre.html',con)
 
 #doctor
@@ -362,29 +347,14 @@ def doctordisease(request):
     else:
         g=dfy['nutrient_1'].iloc[0]
         i=dfy['Nutrient_2'].iloc[0]
-    if li[0]:
-        items1=li[0]
-    else:
-        items1=''
-    if li[1]:
-        items2=li[1]
-    else:
-        items2=''
-    if li[2]:
-        items3=li[0]
-    else:
-        items3=''
-    if li[3]:
-        items4=li[0]
-    else:
-        items4=''
+   
     #print(li)
     
     #print(a)
     #print(dfz)
     #print(h)
 
-    con={'h':h,'all_Disease' :all_Disease,'a':a,'b':b,'c':c,'d':d,'e':e,'f':f,'g':g,'i':i,'med1':med1,'med2':med2,'med3':med3,'med4':med4,'image_one':image_one,'image_two':image_two,'image_three':image_three,'image_four':image_four,'detail':detail,'food':food,'items1':items1,'items2':items2,'items3':items3,'items4':items4}
+    con={'h':h,'li':li,'all_Disease' :all_Disease,'a':a,'b':b,'c':c,'d':d,'e':e,'f':f,'g':g,'i':i,'med1':med1,'med2':med2,'med3':med3,'med4':med4,'image_one':image_one,'image_two':image_two,'image_three':image_three,'image_four':image_four,'detail':detail,'food':food,'items1':items1,'items2':items2,'items3':items3,'items4':items4}
     return render(request,'doctordisease.html',con)
 
 def doctor_main(request):
