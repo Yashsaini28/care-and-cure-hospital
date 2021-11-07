@@ -286,18 +286,22 @@ class disease(models.Model):
     
     def __str__(self):
         return self.Disease
+
+        
 class symptoms(models.Model):
     sym=models.CharField(max_length=250)
 
     def __str__(self):
         return self.sym
 
+
+
 class medicines(models.Model):
     Disease=models.CharField(max_length=200)
-    medicine=models.CharField(max_length=200)
-    nutrient_1=models.CharField(max_length=200)
-    Nutrient_2=models.CharField(max_length=200)
-    food=models.CharField(max_length=200)
+    medicine=models.CharField(max_length=500)
+    nutrient_1=models.CharField(max_length=200,blank=True,null=False)
+    Nutrient_2=models.CharField(max_length=200,blank=True,null=False)
+    food=models.CharField(max_length=500)
     lines=models.CharField(max_length=800)
     food=models.CharField(max_length=200,blank=True)
     doctors=models.CharField(max_length=200)
@@ -308,6 +312,8 @@ class medicines(models.Model):
     image_four=models.CharField(max_length=800)
     def __str__(self):
         return self.Disease
+
+
 class doctorlogin(models.Model):
     doctor=models.CharField(max_length=200,blank=True)
     specialisation=models.CharField(max_length=200,blank=True)
@@ -315,6 +321,8 @@ class doctorlogin(models.Model):
     password=models.EmailField(max_length=200,blank=True)
     def __str__(self):
         return self.doctor
+
+
 class Appoint(models.Model):
     user_name=models.CharField(max_length=200)
     email_patient=models.EmailField(max_length=50)

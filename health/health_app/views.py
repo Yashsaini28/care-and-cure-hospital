@@ -1,4 +1,4 @@
-from django.shortcuts import render,HttpResponse,redirect
+from django.shortcuts import render, HttpResponse, redirect
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from sklearn.ensemble import RandomForestClassifier
@@ -11,153 +11,218 @@ from health_app.models import *
 import pandas as pd
 import numpy as np
 from collections import Counter
-from django.contrib.auth.models import User 
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.urls import reverse
-from django.contrib.auth import login,logout,authenticate
+from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from health_app.models import *
-from django.core.paginator import Paginator,PageNotAnInteger,EmptyPage
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 import joblib
-model=joblib.load("modelrfc.pkl")
-modelsvm=joblib.load("modelsvm.pkl")
-modelnb=joblib.load("modelnb.pkl")
+model = joblib.load("modelrfc.pkl")
+modelsvm = joblib.load("modelsvm.pkl")
+modelnb = joblib.load("modelnb.pkl")
 
 
 def base(request):
-    all_d=doctorlogin.objects.all().order_by('doctor')
+    all_d = doctorlogin.objects.all().order_by('doctor')
     #print('your email is',request.session.get('email'))
-    con={'all_d':all_d }
-    return render(request,'base.html',con)
+    con = {'all_d': all_d}
+    return render(request, 'base.html', con)
 # Create your views here.
+
+
 @login_required
 def user_logout(request):
     logout(request)
-    messages.success(request,'You have been logged out')
+    messages.success(request, 'You have been logged out')
     return HttpResponseRedirect(reverse('user_login'))
 
+
 def doctor_logout(request):
-    messages.success(request,'You have been logged out')
-    return HttpResponseRedirect(reverse('user_login'))
-    
+    messages.success(request, 'You have been logged out')
+    return HttpResponseRedirect(reverse('doctor_login'))
 
 
 def handle_signup(request):
 
-    if request.method=="POST":
-        username=request.POST['username']
-        email=request.POST['email']
-        pass1=request.POST['pass1']
-        pass2=request.POST['pass2']
+    if request.method == "POST":
+        username = request.POST['username']
+        email = request.POST['email']
+        pass1 = request.POST['pass1']
+        pass2 = request.POST['pass2']
 
         # checks
-        if pass1!=pass2:  
-            messages.error(request,'Passwords do not match')
+        if User.objects.filter(username=username).first():
+            messages.error(
+                request, 'The patient with this username is already registered')
             return redirect('/handle_signup')
-        #Create the user
-        myuser=User.objects.create_user(username,email,pass1)
-        request.session['username']=myuser.username
 
+        user = User.objects.filter(email=email)
 
-        messages.success(request,"Your account has been successfully created")
+        if user.exists():
+            messages.error(
+                request, 'The patient with this email is already registered')
+            return redirect('/handle_signup')
+
+        if pass1 != pass2:
+            messages.error(request, 'Passwords do not match')
+            return redirect('/handle_signup')
+
+        if len(pass1) <= 3:
+            messages.error(request, 'Your password is too short')
+            return redirect('/handle_signup')
+        # Create the user
+        myuser = User.objects.create_user(username, email, pass1)
+        request.session['username'] = myuser.username
+
+        messages.success(request, "Your account has been successfully created")
         return redirect("/user_login")
     else:
-        return render(request,'handle_signup.html')
-    
+        return render(request, 'handle_signup.html')
+
+
 def user_login(request):
-     
-    if request.method=='POST':
-        username=request.POST.get('username')
-        password=request.POST.get('password')
-        user=authenticate(username=User.objects.get(email=username),password=password)
-       
 
-        if user:
-            login(request,user)
-            request.session['patient_id']=user.id
-            request.session['email']=user.email
-            return HttpResponseRedirect(reverse('base'))
-            
-        else:
-            #print("Someone tried to login and failed")
-            #print("Username: {} and password{}".format(username,password))
-            messages.error(request,'Invalid login details supplied')
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        try:
+            user = User.objects.get(email=username)
+
+        except User.DoesNotExist:
+            messages.error(request, 'No such User exists')
             return redirect('/user_login')
+
+        # if user:
+        # user=authenticate(username=User.objects.get(email=username),password=password)
+        valid = user.check_password(password)
+        if not valid:
+            messages.error(request, 'Incorrect Password')
+            return redirect('/user_login')
+        else:
+            if user:
+                user = authenticate(username=user, password=password)
+                login(request, user)
+                request.session['patient_id'] = user.id
+                request.session['email'] = user.email
+                p = True
+                return render(request, 'base.html', {'p': p})
+
+            else:
+                #print("Someone tried to login and failed")
+                #print("Username: {} and password{}".format(username,password))
+                messages.error(request, 'Incorrect password supplied')
+                return redirect('/user_login')
     else:
-        return render(request,'user_login.html')
-
-
+        return render(request, 'user_login.html')
 
 
 def dise(request):
-    all_Disease=disease.objects.all()
-    paginator=Paginator(all_Disease,8)
-    page=request.GET.get('page')
+    all_Disease = disease.objects.all()
+    paginator = Paginator(all_Disease, 8)
+    page = request.GET.get('page')
     try:
-        all_Disease=paginator.page(page)
+        all_Disease = paginator.page(page)
     except PageNotAnInteger:
-        all_Disease=paginator.page(1)
+        all_Disease = paginator.page(1)
     except EmptyPage:
-        all_Disease=paginator.page(page.num_pages)
-    context_dict={'all_Disease':all_Disease,'page':page}
-    return render(request,'disease.html',context=context_dict)
+        all_Disease = paginator.page(page.num_pages)
+    context_dict = {'all_Disease': all_Disease, 'page': page}
+    return render(request, 'disease.html', context=context_dict)
 
-  
-#patient
+
+# patient
 def prediction(request):
-    r=False
-    all_sym=symptoms.objects.all().order_by('sym')
-    cs=train.objects.all().values()
-    df=pd.DataFrame(cs)
-    if request.method=='POST':
-        var1=request.POST['symptoms1']
-        var2=request.POST['symptoms2']
-        var3=request.POST['symptoms3']
-        var4=request.POST['symptoms4']
-        df.drop('id',axis=1,inplace=True)
-        a=df.columns[df.columns!='prognosis']
-        
-        dfnew=pd.DataFrame(columns=a)
-        
+    r = False
+    all_sym = symptoms.objects.all().order_by('sym')
+    cs = train.objects.all().values()
+    df = pd.DataFrame(cs)
+    if request.method == 'POST':
+        var1 = request.POST['symptoms1']
+        var2 = request.POST['symptoms2']
+        var3 = request.POST['symptoms3']
+        var4 = request.POST['symptoms4']
+        df.drop('id', axis=1, inplace=True)
+        a = df.columns[df.columns != 'prognosis']
+
+        dfnew = pd.DataFrame(columns=a)
+
         dfnew.loc[len(dfnew)] = 0
-        #dfnew
-        dfnew[var1]=1
-        dfnew[var2]=1
-        dfnew[var3]=1
-        dfnew[var4]=1
-        #dfnew
+        # dfnew
+        dfnew[var1] = 1
+        dfnew[var2] = 1
+        dfnew[var3] = 1
+        dfnew[var4] = 1
+        # dfnew
         dfnew = dfnew.iloc[:, :126].values
 
-       
-        predicted_disease1=model.predict(dfnew)
-        predicted_disease1=predicted_disease1[0]
-        predicted_disease2=modelsvm.predict(dfnew)
-        predicted_disease2=predicted_disease2[0]
-        predicted_disease3=modelnb.predict(dfnew)
-        predicted_disease3=predicted_disease3[0]
-        disease=[]
+        predicted_disease1 = model.predict(dfnew)
+        predicted_disease1 = predicted_disease1[0]
+        predicted_disease2 = modelsvm.predict(dfnew)
+        predicted_disease2 = predicted_disease2[0]
+        predicted_disease3 = modelnb.predict(dfnew)
+        predicted_disease3 = predicted_disease3[0]
+        disease = []
         disease.append(predicted_disease1)
         disease.append(predicted_disease2)
         disease.append(predicted_disease3)
-        
 
         def Most_Common(lst):
             data = Counter(lst)
             return data.most_common(1)[0][0]
-        predicted_disease=Most_Common(disease)
-        r=True
-        request.session['predicted_disease']=predicted_disease
-      
-        cont={'predicted_disease':predicted_disease,'all_sym':all_sym,'r':r}
-    
-        return render(request,'prediction.html',cont)
-    else:
-        co={'all_sym':all_sym}
-        return render(request,'prediction.html',co)
+        predicted_disease = Most_Common(disease)
+        r = True
+        request.session['predicted_disease'] = predicted_disease
 
-#patient
+        cont = {'predicted_disease': predicted_disease,
+                'all_sym': all_sym, 'r': r}
+
+        return render(request, 'prediction.html', cont)
+    else:
+        co = {'all_sym': all_sym}
+        return render(request, 'prediction.html', co)
+
+# patient
+
+
 def disease_with_details(request):
+
+    h = request.session.get('predicted_disease')
+    # print(h)
+    particular_Disease = disease.objects.get(Disease=h)
+    par_detail = medicines.objects.get(Disease=h)
+
+    pre1 = particular_Disease.pre_one.title()
+    # print(pre1)
+    pre2 = particular_Disease.pre_two.title()
+    pre3 = particular_Disease.pre_three.title()
+    pre4 = particular_Disease.pre_four.title()
+
+    if par_detail.food == '':
+        q = False
+        if par_detail.nutrient_1 != '' and par_detail.Nutrient_2 != '':
+            nut1 = True
+            nut2 = True
+            return render(request, 'disease_pre.html', {'particular_Disease': particular_Disease, 'par_detail': par_detail, 'q': q, 'pre1': pre1, 'pre2': pre2, 'pre3': pre3, 'pre4': pre4, 'nut1': nut1, 'nut2': nut2})
+        elif par_detail.nutrient_1 != '' and par_detail.Nutrient_2 == '':
+            nut1 = True
+            nut2 = False
+            return render(request, 'disease_pre.html', {'particular_Disease': particular_Disease, 'par_detail': par_detail, 'q': q, 'pre1': pre1, 'pre2': pre2, 'pre3': pre3, 'pre4': pre4, 'nut1': nut1, 'nut2': nut2})
+        else:
+            nut1 = False
+            nut2 = True
+            return render(request, 'disease_pre.html', {'particular_Disease': particular_Disease, 'par_detail': par_detail, 'q': q, 'pre1': pre1, 'pre2': pre2, 'pre3': pre3, 'pre4': pre4, 'nut1': nut1, 'nut2': nut2})
+    else:
+        q = True
+        li = []
+        li = par_detail.food.split(';')
+        li = [i.title() for i in li]
+        return render(request, 'disease_pre.html', {'particular_Disease': particular_Disease, 'li': li, 'par_detail': par_detail, 'q': q, 'pre1': pre1, 'pre2': pre2, 'pre3': pre3, 'pre4': pre4})
+
+    '''
     all_Disease=disease.objects.all().values()
     all_food=medicines.objects.all().values()
     df=pd.DataFrame(all_food)
@@ -199,106 +264,158 @@ def disease_with_details(request):
    
     con={'h':h,'li':li,'all_Disease' :all_Disease,'a':a,'b':b,'c':c,'d':d,'e':e,'f':f,'g':g,'i':i,'food':food,'items1':items1,'items2':items2,'items3':items3,'items4':items4}
     return render(request,'disease_pre.html',con)
+    '''
 
-#doctor
+# doctor
+
+
 def doctor(request):
-    all_doctors=Doctor.objects.all().order_by('doctor')
-    all_Disease=disease.objects.all().values()
-    all_food=medicines.objects.all().values()
-    dm=pd.DataFrame(all_food)
-    doc=disease.objects.all().values()
-    df=pd.DataFrame(all_Disease)
-    h=request.session.get('predicted_disease_d')
-    dfx=pd.DataFrame(doc)
-    dfz=dfx[dfx['Disease']==h]
-    dff=df[df['Disease']==h]
-    ss=dm[dm['Disease']==h]
-    j=dff['image'].iloc[0]
-    a=dfz['lines'].iloc[0]
-    g=ss['nutrient_1'].iloc[0]
-    i=ss['Nutrient_2'].iloc[0]
+    all_doctors = Doctor.objects.all().order_by('doctor')
+    all_Disease = disease.objects.all().values()
+    all_food = medicines.objects.all().values()
+    dm = pd.DataFrame(all_food)
+    doc = disease.objects.all().values()
+    df = pd.DataFrame(all_Disease)
+    h = request.session.get('predicted_disease_d')
+    dfx = pd.DataFrame(doc)
+    dfz = dfx[dfx['Disease'] == h]
+    dff = df[df['Disease'] == h]
+    ss = dm[dm['Disease'] == h]
+    j = dff['image'].iloc[0]
+    a = dfz['lines'].iloc[0]
+    g = ss['nutrient_1'].iloc[0]
+    i = ss['Nutrient_2'].iloc[0]
 
-    con={'h':h,'all_doctors' :all_doctors,'a':a,'g':g,'i':i,'j':j}
-    return render(request,'doctors.html',con)
+    con = {'h': h, 'all_doctors': all_doctors, 'a': a, 'g': g, 'i': i, 'j': j}
+    return render(request, 'doctors.html', con)
 
-#patient
+# patient
+
+
 def consult(request):
-    h=request.session.get('predicted_disease')
-    l=request.session.get('email')
-    all_food=medicines.objects.all().values()
-    all_doctors=doctorlogin.objects.all().values()
-    all_d=doctorlogin.objects.all().order_by('doctor')
-    
-    df=pd.DataFrame(all_doctors)
-    #print(df)
-    dfx=pd.DataFrame(all_food)
-    dfz=dfx[dfx['Disease']==h]
-    a=dfz['doctors'].iloc[0]
-    dfk=df[df['specialisation']==a]
-    li=[]
+    h = request.session.get('predicted_disease')
+    l = request.session.get('email')
+    all_food = medicines.objects.all().values()
+    all_doctors = doctorlogin.objects.all().values()
+    all_d = doctorlogin.objects.all().order_by('doctor')
+
+    df = pd.DataFrame(all_doctors)
+    # print(df)
+    dfx = pd.DataFrame(all_food)
+    dfz = dfx[dfx['Disease'] == h]
+    a = dfz['doctors'].iloc[0]
+    dfk = df[df['specialisation'] == a]
+    li = []
     for i in dfk['doctor']:
         li.append(i)
-    
 
+    con = {'all_doctors': all_doctors, 'all_d': all_d,
+           'h': h, 'li': li, 'dfk': dfk, 'a': a}
 
-    
-    con={'all_doctors':all_doctors,'all_d':all_d,'h':h,'li':li,'dfk':dfk,'a':a}
-    
-    return render(request,'consult.html',con)
+    return render(request, 'consult.html', con)
+
 
 def doctor_login(request):
-    r=False
-    df=pd.read_csv('doctor_login.csv')
-    if request.method=="POST":
-        email=request.POST.get('email')
-        password=request.POST.get('password')
-        request.session['email']=email
-        if password=='doctor@1928' and email in df.values:
-            r=True
-            con={'r':r}
-            
-            return render(request,'doctor_main.html',con)
-        else:
-            messages.error(request,'Invalid credentials')
+    r = False
+    # df=pd.read_csv('doctor_login.csv')
+    if request.method == "POST":
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        request.session['email'] = email
+        doctor_email = doctorlogin.objects.filter(
+            email=email, password=password)
+        try:
+            if doctor_email.exists():
+                r = True
+                con = {'r': r}
+                return render(request, 'doctor_main.html', con)
+        except:
+            messages.error(request, 'Invalid credentials')
             return redirect('/doctor_login')
     else:
-        return render(request,'doctor_login.html')
-#doctor
-def doctorpred(request):
-    r=True
-    all_sym=symptoms.objects.all().order_by('sym')
-    cs=train.objects.all().values()
-    df=pd.DataFrame(cs)
-    if request.method=='POST':
-        var1=request.POST['symptoms1']
-        var2=request.POST['symptoms2']
-        var3=request.POST['symptoms3']
-        var4=request.POST['symptoms4']
-        df.drop('id',axis=1,inplace=True)
-        a=df.columns[df.columns!='prognosis']
-        
-        dfnew=pd.DataFrame(columns=a)
-        
-        dfnew.loc[len(dfnew)] = 0
-        #dfnew
-        dfnew[var1]=1
-        dfnew[var2]=1
-        dfnew[var3]=1
-        dfnew[var4]=1
-        #dfnew
-       
-        predicted_disease_d=model.predict(dfnew)
-        predicted_disease_d=predicted_disease_d[0]
-        request.session['predicted_disease_d']=predicted_disease_d
-        cont={'predicted_disease_d':predicted_disease_d,'all_sym':all_sym,'r':r}
-        #conte={"reldis":reldis,"reldis2":reldis2,"reldis":reldis3,'all_sym':all_sym}
-        return render(request,'doctorpred.html',cont)
-    else:
-        co={'all_sym':all_sym}
-        return render(request,'doctorpred.html',co)
+        return render(request, 'doctor_login.html')
+# doctor
 
-#doctor
+
+def doctorpred(request):
+    r = True
+    all_sym = symptoms.objects.all().order_by('sym')
+    cs = train.objects.all().values()
+    df = pd.DataFrame(cs)
+    if request.method == 'POST':
+        var1 = request.POST['symptoms1']
+        var2 = request.POST['symptoms2']
+        var3 = request.POST['symptoms3']
+        var4 = request.POST['symptoms4']
+        df.drop('id', axis=1, inplace=True)
+        a = df.columns[df.columns != 'prognosis']
+
+        dfnew = pd.DataFrame(columns=a)
+
+        dfnew.loc[len(dfnew)] = 0
+        # dfnew
+        dfnew[var1] = 1
+        dfnew[var2] = 1
+        dfnew[var3] = 1
+        dfnew[var4] = 1
+        # dfnew
+
+        predicted_disease_d = model.predict(dfnew)
+        predicted_disease_d = predicted_disease_d[0]
+        request.session['predicted_disease_d'] = predicted_disease_d
+        cont = {'predicted_disease_d': predicted_disease_d,
+                'all_sym': all_sym, 'r': r}
+        # conte={"reldis":reldis,"reldis2":reldis2,"reldis":reldis3,'all_sym':all_sym}
+        return render(request, 'doctorpred.html', cont)
+    else:
+        co = {'all_sym': all_sym}
+        return render(request, 'doctorpred.html', co)
+
+# doctor
+
+
 def doctordisease(request):
+
+    h = request.session.get('predicted_disease_d')
+    # print(h)
+    particular_Disease = disease.objects.get(Disease=h)
+    par_detail = medicines.objects.get(Disease=h)
+
+    pre1 = particular_Disease.pre_one.title()
+    # print(pre1)
+    pre2 = particular_Disease.pre_two.title()
+    pre3 = particular_Disease.pre_three.title()
+    pre4 = particular_Disease.pre_four.title()
+
+    med1 = par_detail.medicine.split(',')[0].title()
+    med2 = par_detail.medicine.split(',')[1].title()
+    med3 = par_detail.medicine.split(',')[2].title()
+    med4 = par_detail.medicine.split(',')[3].title()
+
+    if par_detail.food == '':
+        q = False
+        if par_detail.nutrient_1 != '' and par_detail.Nutrient_2 != '':
+            nut1 = True
+            nut2 = True
+            return render(request, 'doctordisease.html', {'particular_Disease': particular_Disease, 'par_detail': par_detail, 'q': q, 'med1': med1, 'med2': med2, 'med3': med3, 'med4': med4, 'nut1': nut1, 'nut2': nut2, 'pre1': pre1, 'pre2': pre2, 'pre3': pre3, 'pre4': pre4})
+        elif par_detail.nutrient_1 != '' and par_detail.Nutrient_2 == '':
+            nut1 = True
+            nut2 = False
+            return render(request, 'doctordisease.html', {'particular_Disease': particular_Disease, 'par_detail': par_detail, 'q': q, 'med1': med1, 'med2': med2, 'med3': med3, 'med4': med4, 'nut1': nut1, 'nut2': nut2, 'pre1': pre1, 'pre2': pre2, 'pre3': pre3, 'pre4': pre4})
+        else:
+            nut1 = False
+            nut2 = True
+            return render(request, 'doctordisease.html', {'particular_Disease': particular_Disease, 'par_detail': par_detail, 'q': q, 'med1': med1, 'med2': med2, 'med3': med3, 'med4': med4, 'nut1': nut1, 'nut2': nut2, 'pre1': pre1, 'pre2': pre2, 'pre3': pre3, 'pre4': pre4})
+    else:
+        q = True
+        li = []
+        li = par_detail.food.split(';')
+        li = [i.title() for i in li]
+        # print(li)
+
+        return render(request, 'doctordisease.html', {'particular_Disease': particular_Disease, 'par_detail': par_detail, 'q': q, 'li': li, 'med1': med1, 'med2': med2, 'med3': med3, 'med4': med4, 'pre1': pre1, 'pre2': pre2, 'pre3': pre3, 'pre4': pre4})
+
+    '''
     all_Disease=disease.objects.all().values()
     all_food=medicines.objects.all().values()
     df=pd.DataFrame(all_food)
@@ -358,101 +475,104 @@ def doctordisease(request):
 
     con={'h':h,'li':li,'all_Disease' :all_Disease,'a':a,'b':b,'c':c,'d':d,'e':e,'f':f,'g':g,'i':i,'med1':med1,'med2':med2,'med3':med3,'med4':med4,'image_one':image_one,'image_two':image_two,'image_three':image_three,'image_four':image_four,'detail':detail,'food':food,'items1':items1,'items2':items2,'items3':items3,'items4':items4}
     return render(request,'doctordisease.html',con)
+'''
+
 
 def doctor_main(request):
-    return render(request,'doctor_main.html')
-
+    return render(request, 'doctor_main.html')
 
 
 def user_app(request):
-    all_doctors=doctorlogin.objects.all().values()
-    
-    df=pd.DataFrame(all_doctors)
-    if request.method=="POST":
-        phone=request.POST['phone']
-        address=request.POST['address']
-        patient_name=request.POST['patient_name']
-        message=request.POST['message']
-        age=str(request.POST['age'])
-        date=request.POST['date']
-        doctor=request.POST['doctor']
+    all_doctors = doctorlogin.objects.all().values()
+
+    df = pd.DataFrame(all_doctors)
+    if request.method == "POST":
+        phone = request.POST['phone']
+        address = request.POST['address']
+        patient_name = request.POST['patient_name']
+        message = request.POST['message']
+        age = str(request.POST['age'])
+        date = request.POST['date']
+        doctor = request.POST['doctor']
         user1 = request.user.get_username()
-        email=request.session.get('email')
-        dfy=df[df['doctor']==doctor]
-        em=dfy['email'].iloc[0]
-        
-        new_entry= Appoint(
-                user_name = user1,
-                email_patient =email ,
-                doctor_name = doctor,
-                doctor_email = em,
-                appointment_date=date,
-                phone_number=phone,
-                address=address,
-                patient_name=patient_name,
-                message= message,
-                age=age,
-                
-            )
-            
+        email = request.session.get('email')
+        dfy = df[df['doctor'] == doctor]
+        em = dfy['email'].iloc[0]
+
+        new_entry = Appoint(
+            user_name=user1,
+            email_patient=email,
+            doctor_name=doctor,
+            doctor_email=em,
+            appointment_date=date,
+            phone_number=phone,
+            address=address,
+            patient_name=patient_name,
+            message=message,
+            age=age,
+
+        )
+
         new_entry.save()
-        messages.success(request, "Your appointment request has been sent successfully. Thank you!")
+        messages.success(
+            request, "Your appointment request has been sent successfully. Thank you!")
         return redirect("/consult")
-    
+
 
 def table(request):
-    email=request.session.get('email')
-    all_objects=Appoint.objects.all().values()
-    all_obj=Appoint.objects.all()
-    df=pd.DataFrame(all_objects)
-    dfz=df[df['doctor_email']==email]
+    email = request.session.get('email')
+    all_objects = Appoint.objects.all().values()
+    all_obj = Appoint.objects.all()
+    df = pd.DataFrame(all_objects)
+    dfz = df[df['doctor_email'] == email]
    # print(dfz)
-   
-    
-    con={'all_objects':all_objects,'all_obj':all_obj,'dfz':dfz}
-    return render(request,'table.html',con)
+
+    con = {'all_objects': all_objects, 'all_obj': all_obj, 'dfz': dfz}
+    return render(request, 'table.html', con)
 
 
 def without_app(request):
-    all_doctors=doctorlogin.objects.all().values()
-    
-    df=pd.DataFrame(all_doctors)
-    if request.method=="POST":
-        phone=request.POST['phone']
-        address=request.POST['address']
-        patient_name=request.POST['patient_name']
-        message=request.POST['message']
-        age=str(request.POST['age'])
-        date=request.POST['date']
-        doctor=request.POST['doctor']
-        email=request.POST['email']
-        dfy=df[df['doctor']==doctor]
-        em=dfy['email'].iloc[0]
-        
+    all_doctors = doctorlogin.objects.all().values()
+
+    df = pd.DataFrame(all_doctors)
+    if request.method == "POST":
+        phone = request.POST['phone']
+        address = request.POST['address']
+        patient_name = request.POST['patient_name']
+        message = request.POST['message']
+        age = str(request.POST['age'])
+        date = request.POST['date']
+        doctor = request.POST['doctor']
+        email = request.POST['email']
+        dfy = df[df['doctor'] == doctor]
+        em = dfy['email'].iloc[0]
+
         new_entry = Appoint(
-                user_name=patient_name,
-                email_patient =email ,
-                doctor_name = doctor,
-                doctor_email = em,
-                appointment_date=date,
-                phone_number=phone,
-                address=address,
-                patient_name=patient_name,
-                message= message,
-                age=age,
-                
-            )
-            
+            user_name=patient_name,
+            email_patient=email,
+            doctor_name=doctor,
+            doctor_email=em,
+            appointment_date=date,
+            phone_number=phone,
+            address=address,
+            patient_name=patient_name,
+            message=message,
+            age=age,
+
+        )
+
         new_entry.save()
-        messages.success(request, "Your appointment request has been sent successfully. Thank you!")
+        messages.success(
+            request, "Your appointment request has been sent successfully. Thank you!")
         return redirect("/")
+
+
 def profile_page(request):
-    username=request.session.get('username')
-    email=request.session.get('email')
-    print(username)
-    con={'username': username ,'email': email}
-    return render(request,'profile.html',con)
-     
 
-
-
+    user = request.user
+    # email=request.session.get('email')
+    username = user.username
+   # print(username)
+    email = user.email
+    con = {'username': username, 'email': email}
+    return render(request, 'profile.html', con)
