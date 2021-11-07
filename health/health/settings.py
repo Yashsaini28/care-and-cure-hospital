@@ -18,8 +18,8 @@ from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-TEAMPLATES_DIR=os.path.join(BASE_DIR,'templates')
-STATIC_DIR=os.path.join(BASE_DIR,"static")
+TEAMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
+STATIC_DIR = os.path.join(BASE_DIR, "static")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
@@ -29,7 +29,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG')
 
-ALLOWED_HOSTS = ['care-cure-hospital.herokuapp.com','127.0.0.1']
+ALLOWED_HOSTS = ["*"]
 
 #ALLOWED_HOSTS = []
 
@@ -93,7 +93,7 @@ WSGI_APPLICATION = 'health.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': str(os.path.join(BASE_DIR, "db.sqlite3"))
     }
 }
 
@@ -136,7 +136,7 @@ USE_TZ = True
 
 
 STATIC_URL = '/static/'
-STATIC_ROOT=os.path.join(BASE_DIR,'staticfiles')
-STATICFILES_DIRS=[
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
     STATIC_DIR,
 ]
