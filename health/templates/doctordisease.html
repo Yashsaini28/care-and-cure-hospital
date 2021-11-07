@@ -38,14 +38,14 @@
     <div class="container" data-aos="fade-up">
 
       <div class="section-title" style="margin-top:2.8em ;">
-        <h2>{{h}}</h2>
+        <h2>{{particular_Disease.Disease}}</h2>
         
       </div>
      
-      <center><img src="{{a}}"width="300" height="300" ></center>
+      <center><img src="{{particular_Disease.image}}"width="300" height="300" ></center>
       <br>
       <h2>Details</h2>
-      <h4>{{e}}</h4>
+      <h4>{{particular_Disease.detail}}</h4>
       <br>
       
       <br>
@@ -56,26 +56,26 @@
             <tr>      
             <td>
               
-            <img src="{{image_one}}" alt="" style="height: 10rem;width: 10rem;">
+            <img src="{{par_detail.image_one}}" alt="" style="height: 10rem;width: 10rem;">
         <br><br>
 
-        {{med1}}</td>
+        <center>{{med1}}</center></td>
             
             <td>
-            <img src="{{image_two}}" alt="" style="height: 10rem;width: 10rem;">
+            <img src="{{par_detail.image_two}}" alt="" style="height: 10rem;width: 10rem;">
         <br><br>
-        {{med2}}
+        <center>{{med2}}</center>
         </td>
             
             <td>
-            <img src="{{image_three}}" alt="" style="height: 10rem;width: 10rem;">
+            <img src="{{par_detail.image_three}}" alt="" style="height: 10rem;width: 10rem;">
         <br><br>
-    {{med3}}</td>
+    <center>{{med3}}</center></td>
             <td>
               
-            <img src="{{image_four}}" alt="" style="height: 10rem;width: 10rem;">
+            <img src="{{par_detail.image_four}}" alt="" style="height: 10rem;width: 10rem;">
         <br><br>
-        {{med4}}
+        <center>{{med4}}</center>
     </td>
           </tr>
           </table>
@@ -85,37 +85,41 @@
       <h3>Preventions</h3>
       <ul>
         
-        <li>{{b}}</li>
-        <li>{{c}}</li>
-        <li>{{d}}</li>
-        <li>{{f}}</li>
+        <li>{{pre1}}</li>
+        <li>{{pre2}}</li>
+        <li>{{pre3}}</li>
+        <li>{{pre4}}</li>
       </ul>
       <div class="section-title" style="margin-top:2.8em ;">
         <h3>FOOD DETAILS</h3>
         
       </div>
       <br>
+      
+      <h5>{{par_detail.lines}}</h5>
       <br>
-      <h5>{{detail}}</h5>
       <br>
-      <br>
-      {% if food %}
+      {% if q %}
       <h3>Food you can consume for better recovery</h3>
       <ul>
-        <li>{{items1}}</li>
-        <li>{{items2}}</li>
-        <li>{{items3}}</li>
-        <li>{{items4}}</li>
+        {%for i in li%}
+        <li>{{i}}</li>
+     
+      {%endfor%}
       </ul>
     
       {% else %}
 
       <h3>Nutrient you can consume for better recovery</h3>
       <ul>
-        <li>{{g}}</li>
-        <li>{{i}}</li>
-        
+        {%if nut1 %}
+        <li>{{par_detail.nutrient_1}}</li>
+        {%endif%}
+        {%if nut2 %}
+        <li>{{par_detail.Nutrient_2}}</li>
+        {%endif%}
       </ul>
+      
       <br>
       <br>
       {%endif%}

@@ -33,14 +33,14 @@
     <div class="container" data-aos="fade-up">
 
       <div class="section-title" style="margin-top:2.8em ;">
-        <h2>{{h}}</h2>
+        <h2>{{particular_Disease.Disease}}</h2>
         
       </div>
      
-      <center><img src="{{a}}"width="300" height="300" ></center>
+      <center><img src="{{particular_Disease.image}}"width="300" height="300" ></center>
       <br>
       <h2>Details</h2>
-      <h4>{{e}}</h4>
+      <h4>{{particular_Disease.detail}}</h4>
       <br>
       <br>
       <div class="text-center"><a href="{% url 'consult' %}"><button style=" width: 10rem ;height: 5rem;" type="button" ><b>Consult a Doctor</b></button></a></div>
@@ -49,24 +49,28 @@
       <h3>Preventions</h3>
       <ul>
         
-        <li>{{b}}</li>
-        <li>{{c}}</li>
-        <li>{{d}}</li>
-        <li>{{f}}</li>
+        <li>{{pre1}}</li>
+        <li>{{pre2}}</li>
+        <li>{{pre3}}</li>
+        <li>{{pre4}}</li>
       </ul>
-      {% if food %}
+      {% if q %}
       <h3>Food you can consume for better recovery</h3>
-      {%for i in li%}
       <ul>
+        {%for i in li%}
         <li>{{i}}</li>
-      </ul>
-    {%endfor%}
-    
+     
+      {%endfor%}
+    </ul>
       {% else %}
       <h3>Nutrient you can consume for better recovery</h3>
       <ul>
-        <li>{{g}}</li>
-        <li>{{i}}</li>
+        {%if nut1 %}
+        <li>{{par_detail.nutrient_1}}</li>
+        {%endif%}
+        {%if nut2 %}
+        <li>{{par_detail.Nutrient_2}}</li>
+        {%endif%}
         
       </ul>
       <br>
